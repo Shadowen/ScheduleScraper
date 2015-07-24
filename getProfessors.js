@@ -1,38 +1,27 @@
 // Run on http://www.apsc.utoronto.ca/timetable/fall.html to retrieve the teachers of courses
-// Load jQuery
-(function() {
-    var script = document.createElement("script");
-    script.src = 'https://code.jquery.com/jquery-2.1.4.min.js';
-    script.type = 'text/javascript';
-    document.getElementsByTagName("head")[0].appendChild(script);
-})();
+
 // Get the page
 // http://www.whateverorigin.org/
 // https://github.com/limtaesu/alloworigin
 // http://anyorigin.com/
 var tries = 0;
-
-var tryJSON = function() {
+var tryJSONRequest = function(success) {
     console.log('Attempting to retrieve timetable...');
     $.getJSON('//alloworigin.com/get?url=http%3A%2F%2Fwww.apsc.utoronto.ca%2Ftimetable%2Ffall.html').success(function(response, b, c) {
-        console.log('Successfully retrieved timetable!');
-        var page = $.parseHTML(response.contents);
-        parsePage(page);
+        console.log('Successfully loaded page!');
+        success( $.parseHTML(response.contents));
     }).error(function(a, b, c) {
-        console.error("Error retrieving page! " + b);
+        console.error("Error retrieving page! (" + b + ')');
         tries++;
         if (tries < 5) {
             console.log('trying again... ' + tries.toString());
-            setTimeout(tryJSON, 1000);
+            setTimeout(tryJSONRequest, 0);
         }
     });
 };
 
-tryJSON();
-
-
-// Retrieve professor names
 var teachers = {};
+// Retrieve professor names from the page (DOM of http%3A%2F%2Fwww.apsc.utoronto.ca%2Ftimetable%2Ffall.html)
 function parsePage(page) {
     $(page).find('a > table').not(':contains("Course Prefixes")').each(function() {
         var prefix = $(this).children('caption').text(); // 3 Letter course prefix (ie. AER)
@@ -96,4 +85,5 @@ function parsePage(page) {
             // console.log(name + ' ' + section);
         });
     });
+    return teachers;
 };
