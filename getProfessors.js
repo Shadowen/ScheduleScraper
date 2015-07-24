@@ -5,24 +5,35 @@
 // https://github.com/limtaesu/alloworigin
 // http://anyorigin.com/
 var tries = 0;
-var tryJSONRequest = function(success) {
-    console.log('Attempting to retrieve timetable...');
-    $.getJSON('//alloworigin.com/get?url=http%3A%2F%2Fwww.apsc.utoronto.ca%2Ftimetable%2Ffall.html').success(function(response, b, c) {
-        console.log('Successfully loaded page!');
-        success( $.parseHTML(response.contents));
-    }).error(function(a, b, c) {
-        console.error("Error retrieving page! (" + b + ')');
-        tries++;
-        if (tries < 5) {
-            console.log('trying again... ' + tries.toString());
-            setTimeout(tryJSONRequest, 0);
-        }
-    });
+var tryJSONRequest = function(url) {
+    console.log('Attempting to retrieve contents of //whateverorigin.org/get?url=' + encodeURIComponent(url) + '...');
+    var deferred = $.Deferred();
+    var doJSON = function() {
+        $.getJSON('//alloworigin.com/get?url=' + encodeURIComponent(url))
+            .success(function(response, b, c) {
+                console.log('Successfully loaded page!');
+                deferred.resolve($.parseHTML(response.contents));
+            })
+            .error(function(a, b, c) {
+                console.error("Error retrieving page! (" + b + ')');
+                tries++;
+                if (tries < 3) {
+                    console.log('trying again... ' + tries.toString());
+                    deferred.notify('trying again...' + tries.toString());
+                    setTimeout(doJSON, 0);
+                } else {
+                    deferred.reject('Failed lots of times :(');
+                }
+            });
+    };
+    doJSON();
+    return deferred.promise();
 };
 
-var teachers = {};
 // Retrieve professor names from the page (DOM of http%3A%2F%2Fwww.apsc.utoronto.ca%2Ftimetable%2Ffall.html)
-function parsePage(page) {
+var parseMasterTimetable = function(page) {
+    console.log('Parsing master timetable...');
+    var teachers = {};
     $(page).find('a > table').not(':contains("Course Prefixes")').each(function() {
         var prefix = $(this).children('caption').text(); // 3 Letter course prefix (ie. AER)
         // console.log(prefix);
@@ -85,5 +96,6 @@ function parsePage(page) {
             // console.log(name + ' ' + section);
         });
     });
+    console.log('Timetable parsed!');
     return teachers;
 };
