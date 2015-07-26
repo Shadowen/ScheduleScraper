@@ -209,7 +209,9 @@
             if (course.notes) {
                 icsString += 'Additional Notes: ' + course.notes + '\n';
             }
-            icsString += 'RRULE:FREQ=WEEKLY;' + (course.isBiweekly ? 'INTERVAL=2;' : '') + 'BYDAY=' + dayToString(course.day) + ';COUNT=' + '16\n';
+            // TODO { Actually end the course when classes end
+            icsString += 'RRULE:FREQ=WEEKLY;' + (course.isBiweekly ? 'INTERVAL=2;' : '') + 'BYDAY=' + dayToString(course.day) + ';COUNT=' + course.isBiweekly ? '7' : '14\n';
+            // } TODO
             icsString += 'END:VEVENT\n';
         }
         icsString += 'END:VCALENDAR\n';
