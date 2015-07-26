@@ -1,9 +1,7 @@
-// Acorn Schedule scraper v3.2
+// Acorn Schedule scraper v4
 
 // TODO
-// Alternate week labs (not sure how to choose which week)
 // Automate import into Google Calendar
-// http://www.undergrad.engineering.utoronto.ca/Office_of_the_Registrar/Timetables.htm
 
 (function() {
     // Retrieves the session information from the current page
@@ -94,24 +92,37 @@
     var getMasterTimetable = function() {
         return $.ajax({
             dataType: "jsonp",
-            url: "//ip.jsontest.com/",
+            url: "https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/63f1abfc0a207678f9270a1a49423e2344388644/timetable-fall.js",
             jsonpCallback: 'c311745ae7ee4925b17eb440fd06a31d'
         });
     }
 
+    var getResponseFromXHR = function(response, reason, obj) {
+        return response;
+    }
+
     var decorateWithExtra = function(schedule, master) {
+        console.log("Starting decorations...");
+
         for (var i = 0; i < schedule.length; i++) {
             var course = schedule[i];
-            var code = course.code;
-            var section = course.meeting;
+            var code = course.code.replace(/[ ]/g, '');
+            var section = course.meeting.replace(/[ ]/g, '');
+            var day = course.day;
             var startTime = course.startTime;
             var endTime = course.endTime;
+            var location = course.room;
             if (master[code] && master[code][section] && master[code][section][day + startTime + endTime + location]) {
                 course.startDate = new Date(master.startDate);
                 course.professors = master.professors;
                 course.notes = master.notes;
+            } else {
+                console.error("Course start date not found:");
+                console.log(course);
             }
         }
+        console.log("Decorations successful!");
+        return schedule;
     }
 
     function generateICS(schedule) {
@@ -158,14 +169,20 @@
         icsString += 'METHOD:REQUEST\n';
         for (var c = 0; c < schedule.length; c++) {
             var course = schedule[c];
-            var dateString = course.startDate.getFullYear() + '' + ('0' + (course.startDate.getMonth() + 1)).slice(-2) + '' + ('0' + course.startDate.getDate()).slice(-2);
+            var dateString;
+            if (course.startDate) {
+                dateString = course.startDate.getFullYear() + '' + ('0' + (course.startDate.getMonth() + 1)).slice(-2) + '' + ('0' + course.startDate.getDate()).slice(-2);
+            } else {
+                console.error("Course start date not found!");
+                dateString = '';
+            }
             icsString += 'BEGIN:VEVENT\n';
             icsString += 'DTSTART:' + dateString + 'T' + course.startTime + '00\n';
             icsString += 'DTEND:' + dateString + 'T' + course.endTime + '00\n';
             icsString += 'UID:' + (today.getTime() + c) + '@heungs.com\n';
             icsString += 'LOCATION:' + course.room + '\n';
             icsString += 'SUMMARY:' + course.code + ' ' + formatMeeting(course.meeting) + '\n';
-            icsString += 'DESCRIPTION:' + course.code + '\\n' + course.meeting + '\\n' + course.professors + '\\n' + course.notes '\n';
+            icsString += 'DESCRIPTION:' + course.code + '\\n' + course.meeting + '\\n' + course.professors + '\\n' + course.notes + '\n';
             icsString += 'RRULE:FREQ=WEEKLY;' + (course.isBiweekly ? 'INTERVAL=2;' : '') + 'BYDAY=' + dayToString(course.day) + ';COUNT=' + '16\n';
             icsString += 'END:VEVENT\n';
         }
@@ -222,6 +239,7 @@
                 // (2) Retrieve master timetable
                 $.when(getSession())
                 .then(getMasterTimetable)
+                .then(getResponseFromXHR)
             )
             .then(decorateWithExtra)
             // Generate the .ics

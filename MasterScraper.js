@@ -51,15 +51,15 @@ withJQuery(function($) {
         var dayStrToNum = function(word) {
             switch (word) {
                 case "Mon":
-                    return 1;
+                    return '1';
                 case "Tue":
-                    return 2;
+                    return '2';
                 case "Wed":
-                    return 3;
+                    return '3';
                 case "Thu":
-                    return 4;
+                    return '4';
                 case "Fri":
-                    return 5;
+                    return '5';
                 default:
                     console.error("Failed to convert day " + word + "to number.");
             }
@@ -77,7 +77,7 @@ withJQuery(function($) {
                 var code = tds.eq(0).text();
                 var section = tds.eq(1).text();
                 var startDate = tds.eq(2).text();
-                var day = tds.eq(3).text();
+                var day = dayStrToNum(tds.eq(3).text());
                 var startTime = tds.eq(4).text().replace(/[:]/g, '');
                 var finishTime = tds.eq(5).text().replace(/[:]/g, '');
                 var location = tds.eq(6).text();
