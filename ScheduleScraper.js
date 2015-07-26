@@ -1,4 +1,4 @@
-// Acorn Schedule scraper v4.1
+// Acorn Schedule scraper v4.2
 
 // TODO
 // Automate import into Google Calendar
@@ -92,7 +92,7 @@
     var getMasterTimetable = function() {
         return $.ajax({
             dataType: "jsonp",
-            url: "https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/66e21e370e82f74b70bed5d50faa864684e0b54f/timetable-fall.js",
+            url: "https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/master/timetable-fall.js",
             jsonpCallback: 'c311745ae7ee4925b17eb440fd06a31d'
         });
     }
@@ -260,24 +260,31 @@
     var correctURL = "https://acorn.utoronto.ca/sws/timetable/scheduleView.do#/";
     if (window.location.href == correctURL) {
         console.log("Script starting...");
-        // Make a promise
-        $.when(
-                // (1) Parse the current page
-                parseTimetable(),
-                // (2) Retrieve master timetable
-                $.when(getSession())
-                .then(getMasterTimetable)
-                .then(getResponseFromXHR)
-            )
-            .then(decorateWithExtra)
-            // Generate the .ics
-            .then(generateICS)
-            // Create a download button
-            .then(createDownloadButton)
-            // Programatically click the button to start the download
-            .then(function(button) {
-                button[0].click()
-            });
+        var start = function() {
+            // Make a promise
+            $.when(
+                    // (1) Parse the current page
+                    parseTimetable(),
+                    // (2) Retrieve master timetable
+                    $.when(getSession())
+                    .then(getMasterTimetable)
+                    .then(getResponseFromXHR)
+                )
+                .then(decorateWithExtra)
+                // Generate the .ics
+                .then(generateICS)
+                // Create a download button
+                .then(createDownloadButton)
+                // Programatically click the button to start the download
+                .then(function(button) {
+                    button[0].click()
+                });
+        };
+        if (document.readyState == 'complete'){
+        	start();
+        }else{
+        	window.onload = start;
+        }
     } else {
         if (window.confirm("Please run this script on " + correctURL + "\nI can't hack into your ACORN account to grab your schedule for you...\nClick OK to go there now.\nClick Cancel to stay here.")) {
             window.location.href = correctURL;
