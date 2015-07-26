@@ -78,8 +78,8 @@ withJQuery(function($) {
                 var section = tds.eq(1).text();
                 var startDate = tds.eq(2).text();
                 var day = tds.eq(3).text();
-                var startTime = tds.eq(4).text();
-                var finishTime = tds.eq(5).text();
+                var startTime = tds.eq(4).text().replace(/[:]/g, '');
+                var finishTime = tds.eq(5).text().replace(/[:]/g, '');
                 var location = tds.eq(6).text();
                 // An array of the professors teaching the course
                 var professors = $.each($.grep(tds.eq(7).text().split(" and "), function(e) {
@@ -108,14 +108,14 @@ withJQuery(function($) {
     };
 
     var toJSONP = function(string){
-    	return "c311745ae7ee4925b17eb440fd06a31d('" + string.replace(/[']/g, "\\\'") + "')";
+    	return "c311745ae7ee4925b17eb440fd06a31d(" + string + ")";
     }
 
     var downloadString = function(string) {
         console.log('Creating download...');
         $(document.createElement('a'))
             .css('display', 'none')
-            .attr('download', location.pathname.slice(1).replace(/[\/]/g, '-').replace('.html', '') + "-export.json")
+            .attr('download', location.pathname.slice(1).replace(/[\/]/g, '-').replace('.html', '') + ".js")
             .attr('href', window.URL.createObjectURL(
                 new Blob([string], {
                     type: 'text/plain'
