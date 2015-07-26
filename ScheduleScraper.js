@@ -92,7 +92,7 @@
     var getMasterTimetable = function() {
         return $.ajax({
             dataType: "jsonp",
-            url: "https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/7b6a194138d117280e8ba9dee8835df285b76c3d/timetable-fall.js",
+            url: "https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/66e21e370e82f74b70bed5d50faa864684e0b54f/timetable-fall.js",
             jsonpCallback: 'c311745ae7ee4925b17eb440fd06a31d'
         });
     }
@@ -200,7 +200,15 @@
             icsString += 'UID:' + (today.getTime() + c) + '@heungs.com\n';
             icsString += 'LOCATION:' + course.room + '\n';
             icsString += 'SUMMARY:' + course.code + ' ' + formatMeeting(course.meeting) + '\n';
-            icsString += 'DESCRIPTION:' + course.code + '\\n' + course.meeting + '\\n' + course.professors + '\\n' + course.notes + '\n';
+            icsString += 'DESCRIPTION:Course code:' + course.code + '\\nSection: ' + course.meeting + '\\n';
+            if (course.professors.length > 0) {
+                icsString += 'Professors: ' + course.professors.reduce(function(prev, cur, index) {
+                    return prev + (index == 0 ? '' : ', ') + cur.first + ' ' + cur.last;
+                }, '') + '\\n';
+            }
+            if (course.notes) {
+                icsString += 'Additional Notes: ' + course.notes + '\n';
+            }
             icsString += 'RRULE:FREQ=WEEKLY;' + (course.isBiweekly ? 'INTERVAL=2;' : '') + 'BYDAY=' + dayToString(course.day) + ';COUNT=' + '16\n';
             icsString += 'END:VEVENT\n';
         }
