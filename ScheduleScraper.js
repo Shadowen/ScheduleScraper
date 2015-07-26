@@ -91,23 +91,6 @@
         return schedule;
     }
 
-    function decorateWithExtra(schedule, extra) {
-        console.log('Decorating courses with extra info...');
-        var teachers = extra[0];
-        var startDates = extra[1];
-        for (var i = 0; i < schedule.length; i++) {
-            var course = schedule[i];
-            // The teachers array has no spaces in its keys
-            // course.code and course.meeting must have all spaces removed to match
-            var code = course.code.replace(/ /g, '');
-            var meeting = course.meeting.replace(/ /g, '');
-            course.teachers = teachers && teachers[code] && teachers[code][meeting] ? teachers[code][meeting] : [];
-            course.startDate = startDates && startDates[code] && startDates[code][meeting] && startDates[code][meeting][day] ? startDates[code][meeting][day] : new Date();
-        }
-        console.log('Extra info added!');
-        return schedule;
-    }
-
     function generateICS(schedule) {
         console.log('Generating .ics file...');
 
@@ -210,19 +193,10 @@
     var correctURL = "https://acorn.utoronto.ca/sws/timetable/scheduleView.do#/";
     if (window.location.href == correctURL) {
         console.log("Script starting...");
-        // Fork the asynchronous calls into two paths
-        $.when(
-                // (1) Parse the current page
-                parseTimetable(),
-                // (2) Parse the "master timetable" - http://www.apsc.utoronto.ca/timetable/fall.html or http://www.apsc.utoronto.ca/timetable/winter.html
-                $.when(getSession())
-                // .then(function(session) {
-                //     return tryJSONRequest('http://www.apsc.utoronto.ca/timetable/' + session.replace(/[0-9 ]/g, '').toLowerCase() + '.html');
-                // })
-                // .then(parseMasterTimetable)
+        // Make a promise
+        $.when(// (1) Parse the current page
+                parseTimetable()
             )
-            // Wait for both the previous paths to complete, then merge the data
-            // .then(decorateWithExtra)
             // Generate the .ics
             .then(generateICS)
             // Create a download button

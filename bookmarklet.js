@@ -1,3 +1,3 @@
 javascript: $(function() {
-    $.getScript('https://raw.githubusercontent.com/Shadowen/ScheduleScraper/master/ScheduleScraper.js')
+    $.getScript('https://gitcdn.xyz/repo/Shadowen/ScheduleScraper/master/ScheduleScraper.js');
 });
