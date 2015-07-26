@@ -107,11 +107,15 @@ withJQuery(function($) {
         return master;
     };
 
+    var toJSONP = function(string){
+    	return "c311745ae7ee4925b17eb440fd06a31d('" + string.replace(/[']/g, "\\\'") + "')";
+    }
+
     var downloadString = function(string) {
         console.log('Creating download...');
         $(document.createElement('a'))
             .css('display', 'none')
-            .attr('download', location.pathname.slice(1).replace(/[\/]/g, '-') + "-export.json")
+            .attr('download', location.pathname.slice(1).replace(/[\/]/g, '-').replace('.html', '') + "-export.json")
             .attr('href', window.URL.createObjectURL(
                 new Blob([string], {
                     type: 'text/plain'
@@ -124,5 +128,8 @@ withJQuery(function($) {
         .then(function(master) {
             console.log(master);
             return master;
-        }).then(JSON.stringify).then(downloadString);
+        })
+        .then(JSON.stringify)
+        .then(toJSONP)
+        .then(downloadString);
 });
