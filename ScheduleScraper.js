@@ -28,7 +28,7 @@
             var formatTime = function(time, isPastNoon) {
                 var timeSplit = time.split(':');
                 var hour = parseInt(timeSplit[0]);
-                if (isPastNoon) {
+                if (isPastNoon && hour < 12) {
                     hour += 12;
                 }
                 var hourString = ('0' + hour.toString()).slice(-2);
@@ -70,7 +70,7 @@
                 // Skip empty classes
                 if (slotTag.hasClass("time")) {
                     // Detect when we cross noon
-                    if (slotTag.text() == "1:00") {
+                    if (slotTag.text() == "12:00") {
                         isPastNoon = true;
                     }
                     continue;
@@ -92,7 +92,7 @@
     var getMasterTimetable = function() {
         return $.ajax({
             dataType: "jsonp",
-            url: "https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/63f1abfc0a207678f9270a1a49423e2344388644/timetable-fall.js",
+            url: "https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/7b6a194138d117280e8ba9dee8835df285b76c3d/timetable-fall.js",
             jsonpCallback: 'c311745ae7ee4925b17eb440fd06a31d'
         });
     }
@@ -103,7 +103,7 @@
 
     var decorateWithExtra = function(schedule, master) {
         console.log("Starting decorations...");
-
+        console.log(master);
         for (var i = 0; i < schedule.length; i++) {
             var course = schedule[i];
             var code = course.code.replace(/[ ]/g, '');
@@ -111,11 +111,19 @@
             var day = course.day;
             var startTime = course.startTime;
             var endTime = course.endTime;
-            var location = course.room;
-            if (master[code] && master[code][section] && master[code][section][day + startTime + endTime + location]) {
-                course.startDate = new Date(master.startDate);
-                course.professors = master.professors;
-                course.notes = master.notes;
+            var room = course.room.replace(/[ ]/g, '');
+            // TODO{ temporary fix for courses with multiple locations
+            var index = room.indexOf('/');
+            if (index > 0) {
+                room = room.slice(0, index);
+            }
+            // }TODO
+            // TODO{ Replace master[0] with the appropriate course date (especially Y courses)
+            if (master[code] && master[code][section] && master[code][section][day + startTime + endTime + room]) {
+                course.startDate = new Date(master[code][section][day + startTime + endTime + room][0].startDate);
+                course.professors = master[code][section][day + startTime + endTime + room][0].professors;
+                course.notes = master[code][section][day + startTime + endTime + room][0].notes;
+                // }TODO
             } else {
                 console.error("Course start date not found:");
                 console.log(course);
