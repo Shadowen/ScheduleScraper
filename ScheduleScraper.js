@@ -1,4 +1,4 @@
-// Acorn Schedule scraper v4
+// Acorn Schedule scraper v4.1
 
 // TODO
 // Automate import into Google Calendar
@@ -136,6 +136,14 @@
     function generateICS(schedule) {
         console.log('Generating .ics file...');
 
+        function calculateNextDay(startDate, dayOfWeek) {
+            var date = new Date(startDate);
+            while (date.getDay() != dayOfWeek) {
+                date.setDate(date.getDate() + 1);
+            }
+            return date;
+        }
+
         function dayToString(day) {
             switch (day) {
                 case 1:
@@ -179,7 +187,9 @@
             var course = schedule[c];
             var dateString;
             if (course.startDate) {
-                dateString = course.startDate.getFullYear() + '' + ('0' + (course.startDate.getMonth() + 1)).slice(-2) + '' + ('0' + course.startDate.getDate()).slice(-2);
+                dateString = course.startDate.getFullYear().toString() +
+                    ('0' + (course.startDate.getMonth() + 1)).slice(-2).toString() +
+                    ('0' + calculateNextDay(course.startDate, course.day).getDate()).slice(-2);
             } else {
                 console.error("Course start date not found!");
                 dateString = '';

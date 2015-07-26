@@ -82,9 +82,9 @@ withJQuery(function($) {
                 var finishTime = tds.eq(5).text().replace(/[:]/g, '');
                 var location = tds.eq(6).text();
                 // An array of the professors teaching the course
-                var professors = $.each($.grep(tds.eq(7).text().split(" and "), function(e) {
+                var professors = $.map($.grep(tds.eq(7).text().split(" and "), function(e) {
                     return /\S/.test(e);
-                }), function(index, name) {
+                }), function(name) {
                     var splitName = name.split(',');
                     return {
                         first: splitName[1].trim(),
