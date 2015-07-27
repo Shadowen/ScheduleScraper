@@ -231,5 +231,7 @@
         canvas.fadeOut(1000);
         setTimeout(deferred.resolve, 1000);
         return deferred;
+    }).then(function() {
+        $('body').data('f57b7ad2ab284e388323484708a031f7').resolve();
     });
 })();

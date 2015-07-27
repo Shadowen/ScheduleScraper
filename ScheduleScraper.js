@@ -5,6 +5,13 @@
 // Automate import into Google Calendar
 
 (function() {
+    var getLoadingPage = function() {
+        var deferred = $.Deferred();
+        $('body').data('f57b7ad2ab284e388323484708a031f7', deferred)
+        $.getScript('https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/master/LoadingPage.js');
+        return deferred.promise();
+    }
+
     // Retrieves the session information from the current page
     var getSession = function() {
         console.log('Getting session...');
@@ -17,7 +24,7 @@
 
     var getTimestamp = function() {
         console.log('Getting timestamp...');
-        var timetsmp = $('td.section>p.note.skipprint').text().trim()
+        var timestamp = $('td.section>p.note.skipprint').text().trim()
         console.log('Got timestamp!');
         return timestamp;
     }
@@ -40,6 +47,22 @@
             var course = {};
             var slotLines = slotTag.html().split('<br>');
             course.code = slotTag.contents().eq(0).text().trim();
+            course.session = course.code.slice(-1);
+            // TODO { Retrieve the actual course start dates
+            switch (course.session) {
+                case 'F':
+                    course.startDate = [new Date(2015, 09, 14)];
+                    break;
+                case 'S':
+                    course.startDate = [new Date(2015, 01, 11)];
+                    break;
+                case 'Y':
+                    course.startDate = [new Date(2015, 09, 14), new Date(2015, 01, 11)];
+                    break;
+                default:
+                    console.error('Session code \'' + course.session + '\' not recognized');
+            }
+            // }
             course.day = dayNum;
             course.meeting = slotTag.contents(".meet").text();
             course.startTime = formatTime(slotTag.contents().eq(4).text().split("-")[0], isPastNoon);
@@ -187,15 +210,9 @@
         icsString += 'METHOD:REQUEST\n';
         for (var c = 0; c < schedule.length; c++) {
             var course = schedule[c];
-            var dateString;
-            if (course.startDate) {
-                dateString = course.startDate.getFullYear().toString() +
-                    ('0' + (course.startDate.getMonth() + 1)).slice(-2).toString() +
-                    ('0' + calculateNextDay(course.startDate, course.day).getDate()).slice(-2);
-            } else {
-                console.error("Course start date not found!");
-                dateString = '';
-            }
+            var dateString = course.startDate.getFullYear().toString() +
+                ('0' + (course.startDate.getMonth() + 1)).slice(-2).toString() +
+                ('0' + calculateNextDay(course.startDate, course.day).getDate()).slice(-2);
             icsString += 'BEGIN:VEVENT\n';
             icsString += 'DTSTART:' + dateString + 'T' + course.startTime + '00\n';
             icsString += 'DTEND:' + dateString + 'T' + course.endTime + '00\n';
@@ -258,30 +275,39 @@
         return downloadLink;
     }
 
-    ////////// Main program
+        ////////// Main program
     var correctURL = "https://acorn.utoronto.ca/sws/timetable/scheduleView.do#/";
     if (window.location.href == correctURL) {
-        console.log("Script starting...");
-        // Loading screen
-        $.getScript();
+        console.log("Script started @ " + getTimestamp() + "...");
         // Actual things
         var run = function() {
             // Make a promise
             $.when(
-                    // (2) Parse the current page
-                    parseTimetable(),
-                    // (3) Retrieve master timetable
-                    $.when(getSession())
-                    .then(getMasterTimetable)
-                    .then(getResponseFromXHR)
+                    // Loading screen
+                    getLoadingPage()
+                    .then(function() {
+                        console.log('Loading page complete!');
+                    }),
+                    // Other
+                    $.when(
+                        // (1) Parse the current page
+                        $.when(parseTimetable()),
+                        // (2) Retrieve master timetable
+                        $.when(getSession())
+                        .then(getMasterTimetable)
+                        .then(getResponseFromXHR)
+                    )
+                    .then(decorateWithExtra)
+                    // Generate the .ics
+                    .then(generateICS)
+                    // Create a download button
+                    .then(createDownloadButton)
                 )
-                .then(decorateWithExtra)
-                // Generate the .ics
-                .then(generateICS)
-                // Create a download button
-                .then(createDownloadButton)
                 // Programatically click the button to start the download
-                .then(function(button) {
+                .then(function(loadingPage, button) {
+                    console.log('done!');
+                    console.log(loadingPage);
+                    console.log(button);
                     button[0].click()
                 });
         };
