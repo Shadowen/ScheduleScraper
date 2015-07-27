@@ -148,7 +148,7 @@
             overlay.append(update.textBox);
             update.progressBarContainer = $('<div></div>')
                 .css('position', 'relative')
-                .css('height', '20px')
+                .css('height', '40px')
                 .css('width', '30vw')
                 .css('border-radius', '25px')
                 .css('background-color', 'white')
