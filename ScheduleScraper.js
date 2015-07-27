@@ -1,6 +1,7 @@
-// Acorn Schedule scraper v4.2
+// Acorn Schedule scraper v4.3
 
 // TODO
+// Loading screen http://cssdeck.com/labs/the-matrix
 // Automate import into Google Calendar
 
 (function() {
@@ -85,11 +86,12 @@
                 }
             }
         });
-        console.log('Timetable parsed!');
+        console.log('Timetable parsed! ' + schedule.length + ' timeslots detected.');
         return schedule;
     }
 
-    var getMasterTimetable = function() {
+    var getMasterTimetable = function(session) {
+        console.log('Requesting master timetable for ' + session + '...');
         return $.ajax({
             dataType: "jsonp",
             url: "https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/master/timetable-fall.js",
@@ -98,12 +100,12 @@
     }
 
     var getResponseFromXHR = function(response, reason, obj) {
+        console.log('Master timetable found! ' + response.length + ' courses retrieved.');
         return response;
     }
 
     var decorateWithExtra = function(schedule, master) {
         console.log("Starting decorations...");
-        console.log(master);
         for (var i = 0; i < schedule.length; i++) {
             var course = schedule[i];
             var code = course.code.replace(/[ ]/g, '');
@@ -125,7 +127,7 @@
                 course.notes = master[code][section][day + startTime + endTime + room][0].notes;
                 // }TODO
             } else {
-                console.error("Course start date not found:");
+                console.error("Course start date not found for:");
                 console.log(course);
             }
         }
@@ -133,10 +135,10 @@
         return schedule;
     }
 
-    function generateICS(schedule) {
+    var generateICS = function(schedule) {
         console.log('Generating .ics file...');
 
-        function calculateNextDay(startDate, dayOfWeek) {
+        var calculateNextDay = function(startDate, dayOfWeek) {
             var date = new Date(startDate);
             while (date.getDay() != dayOfWeek) {
                 date.setDate(date.getDate() + 1);
@@ -144,7 +146,7 @@
             return date;
         }
 
-        function dayToString(day) {
+        var dayToString = function(day) {
             switch (day) {
                 case 1:
                     return 'MO';
@@ -162,7 +164,7 @@
             }
         }
 
-        function formatMeeting(meetingCode) {
+        var formatMeeting = function(meetingCode) {
             switch (meetingCode.split(' ')[0]) {
                 case "LEC":
                     return "Lecture";
@@ -219,7 +221,7 @@
         return icsString;
     }
 
-    function createDownloadButton(icsString) {
+    var createDownloadButton = function(icsString) {
         console.log('Creating download button...');
 
         // Create download link
@@ -260,12 +262,15 @@
     var correctURL = "https://acorn.utoronto.ca/sws/timetable/scheduleView.do#/";
     if (window.location.href == correctURL) {
         console.log("Script starting...");
-        var start = function() {
+        // Loading screen
+        $.getScript();
+        // Actual things
+        var run = function() {
             // Make a promise
             $.when(
-                    // (1) Parse the current page
+                    // (2) Parse the current page
                     parseTimetable(),
-                    // (2) Retrieve master timetable
+                    // (3) Retrieve master timetable
                     $.when(getSession())
                     .then(getMasterTimetable)
                     .then(getResponseFromXHR)
@@ -280,13 +285,12 @@
                     button[0].click()
                 });
         };
-        if (document.readyState == 'complete'){
-        	start();
-        }else{
-        	window.onload = start;
-        }
+        // Run immediately if page is loaded, else wait for the page to load
+        document.readyState == 'complete' ? run() : window.onload = run;
     } else {
+        console.error('Attempted to run script on wrong URL!');
         if (window.confirm("Please run this script on " + correctURL + "\nI can't hack into your ACORN account to grab your schedule for you...\nClick OK to go there now.\nClick Cancel to stay here.")) {
+            console.log('Redirecting to ACORN.');
             window.location.href = correctURL;
         } else {
             console.log("Script not run.")
