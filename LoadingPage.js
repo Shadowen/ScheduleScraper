@@ -5,16 +5,17 @@
     var canvas = $('<canvas></canvas>')
         .css('position', 'fixed')
         .css('top', 0)
-        // .css('height', '100vh')
         .attr('height', window.innerHeight)
         .css('left', 0)
-        // .css('width', '100vw')
         .attr('width', window.innerWidth)
         .css('background-color', 'rgba(0,0,0,0.9)')
         .css('z-index', 9000)
         .hide()
         .appendTo('body')
         .fadeIn(1000);
+    var canvasHeight = canvas.height();
+    var canvasWidth = canvas.width();
+
 
     var stripCount = 25;
     var strips = [];
@@ -57,13 +58,10 @@
 
     var context = canvas[0].getContext('2d');
 
-    function toRGBA(rgb, a) {
-        return 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + a + ')';
-    }
     var seedStrips = function(y) {
         var strip = {};
         strip.fontSize = Math.floor(Math.random() * (MAX_FONT_SIZE - MIN_FONT_SIZE)) + MIN_FONT_SIZE;
-        strip.x = Math.floor(Math.random() * canvas.width())
+        strip.x = Math.floor(Math.random() * canvasWidth)
         strip.y = y ? y : -100;
         strip.dy = (Math.floor(Math.random() * (MAX_SPEED - MIN_SPEED)) + MIN_SPEED) * (strip.fontSize);
         strip.alpha = Math.random() * (MAX_OPACITY - MIN_OPACITY) + MIN_OPACITY;
@@ -72,21 +70,25 @@
         for (var j = 0; j < numChars; j++) {
             strip.chars.push(letters[Math.floor(Math.random() * letters.length)]);
         }
-        strips.push(strip);
+        return strip;
     };
     for (var i = 0; i < stripCount; i++) {
-        seedStrips(Math.floor(Math.random() * canvas.height()));
+        strips[i] = seedStrips(Math.floor(Math.random() * canvasHeight));
     };
     (function draw() {
+        function toRGBA(rgb, a) {
+            return 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + a + ')';
+        }
+
         // Regenerate strips that are out of bounds
         for (var i = 0; i < strips.length; i++) {
-            if (strips[i].y > canvas.height() + strips[i].chars.length * strips[i].fontSize) {
+            if (strips[i].y > canvasHeight + strips[i].chars.length * strips[i].fontSize) {
                 strips.splice(i, 1);
-                setTimeout(seedStrips(), Math.floor(Math.random() * 1000));
+                setTimeout(seedStrips, Math.floor(Math.random() * 1000));
             }
         }
         // Clear the canvas and set the properties
-        context.clearRect(0, 0, canvas.width(), canvas.height());
+        context.clearRect(0, 0, canvasWidth, canvasHeight);
         context.shadowOffsetX = context.shadowOffsetY = 0;
         context.shadowBlur = 8;
         context.shadowColor = '#94f475';
@@ -121,7 +123,7 @@
             }
             strip.y += strip.dy;
         }
-        setTimeout(draw, 1000 / 30);
+        setTimeout(draw, 30);
     })();
 
 
@@ -229,9 +231,14 @@
         var deferred = $.Deferred();
         container.children().fadeOut(1000);
         canvas.fadeOut(1000);
-        setTimeout(deferred.resolve, 1000);
-        return deferred;
-    }).then(function() {
         $('body').data('f57b7ad2ab284e388323484708a031f7').resolve();
+        setTimeout(function() {
+            deferred.resolve(container, canvas)
+        }, 1000);
+        return deferred.promise();
+    }).then(function(container, canvas) {
+        // TODO
+        container.remove();
+        canvas.remove();
     });
 })();
