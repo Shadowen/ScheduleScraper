@@ -1,7 +1,6 @@
-// Acorn Schedule scraper v4.3
+// Acorn Schedule scraper v4.4
 
 // TODO
-// Loading screen http://cssdeck.com/labs/the-matrix
 // Automate import into Google Calendar
 
 (function() {
