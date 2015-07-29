@@ -1,4 +1,4 @@
-// Acorn Schedule scraper v5.1
+// Acorn Schedule scraper v5.2
 
 // TODO
 // Automate import into Google Calendar
