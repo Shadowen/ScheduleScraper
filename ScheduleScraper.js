@@ -1,4 +1,4 @@
-// Acorn Schedule scraper v5.0
+// Acorn Schedule scraper v5.1
 
 // TODO
 // Automate import into Google Calendar
@@ -14,9 +14,15 @@
     // Retrieves the session information from the current page
     var getSession = function() {
         console.log('Getting session...');
-        var session = $('div.session-info>span:contains("Session")').next().contents().filter(function() {
-            return this.nodeType == 3;
-        }).text().trim();
+        // RoSI || ACORN
+        var session = ($('td.section>table>tbody>tr:contains("Session")>td') || $('div.session-info>span:contains("Session")'))
+            .next()
+            .contents()
+            .filter(function() {
+                return this.nodeType == 3;
+            })
+            .text()
+            .replace(/(\n|\r| )/gm,"");
         console.log('Detected session "' + session + '"');
         return session;
     }
@@ -312,6 +318,36 @@
                 button[0].click()
             });
     };
-    // Run immediately if page is loaded, else wait for the page to load
-    document.readyState == 'complete' ? run() : window.onload = run;
+
+    // Detect the page
+    var rosiURL = 'https://sws.rosi.utoronto.ca/sws/timetable/scheduleView.do';
+    var acornURL = 'https://acorn.utoronto.ca/sws/timetable.scheduleView.do#/';
+    // RoSI
+    if (location.href.indexOf(rosiURL) != -1) {
+        console.log('RoSI detected.');
+        // Load jQuery
+        var uid = "__9384nalksdfalkj04320";
+        //create onload-callback function
+        window[uid] = function() {
+            console.log("jQuery-" + jQuery.fn.jquery + " loaded!");
+            run();
+        };
+        var script = document.createElement("script");
+        script.setAttribute("type", "text/javascript");
+        script.setAttribute("onload", uid + "();"); //register onload-callback listener function
+        script.setAttribute("src", "//code.jquery.com/jquery-2.1.4.min.js");
+        document.head.appendChild(script);
+    } else if (location.href.indexOf(acornURL) != -1) {
+        console.log('ACORN detected');
+        // Run immediately if page is loaded, else wait for the page to load
+        document.readyState == 'complete' ? run() : window.onload = run;
+    } else {
+        if (window.confirm("Please run this script on the page where you can see your timetable!\n" +
+                "I can 't hack into your ACORN account to grab your schedule for you...\n" +
+                "Click OK to go there now.\n Click Cancel to stay here.")) {
+            window.location.href = acornURL;
+        } else {
+            console.log("Script not run.")
+        }
+    }
 })();
