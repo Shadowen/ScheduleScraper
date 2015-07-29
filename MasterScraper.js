@@ -17,7 +17,7 @@ var withJQuery = function(success) {
         var script = document.createElement("script");
         script.setAttribute("type", "text/javascript");
         script.setAttribute("onload", uid + "();"); //register onload-callback listener function
-        script.setAttribute("src", "http://code.jquery.com/jquery-latest.min.js");
+        script.setAttribute("src", "//code.jquery.com/jquery-latest.min.js");
         document.head.appendChild(script);
     } else {
         console.log('jQuery-' + jQuery.fn.jquery + ' was already loaded.');

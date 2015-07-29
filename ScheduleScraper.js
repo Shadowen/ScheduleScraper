@@ -23,7 +23,9 @@
                 return this.nodeType == 3;
             })
             .text()
-            .replace(/(\n|\r| )/gm, "");
+            // A very aggressive .trim() function
+            // using https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/String/trim
+             .replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
         console.log('Detected session "' + session + '"');
         return session;
     }
