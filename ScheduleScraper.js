@@ -14,15 +14,16 @@
     // Retrieves the session information from the current page
     var getSession = function() {
         console.log('Getting session...');
-        // RoSI || ACORN
-        var session = ($('td.section>table>tbody>tr:contains("Session")>td') || $('div.session-info>span:contains("Session")'))
+        var session = (ROSI ?
+                $('td.section>table>tbody>tr:contains("Session")>td') :
+                $('div.session-info>span:contains("Session")'))
             .next()
             .contents()
             .filter(function() {
                 return this.nodeType == 3;
             })
             .text()
-            .replace(/(\n|\r| )/gm,"");
+            .replace(/(\n|\r| )/gm, "");
         console.log('Detected session "' + session + '"');
         return session;
     }
@@ -63,7 +64,7 @@
             // TODO { Retrieve the actual course start dates
             if (session.indexOf('Fall') != -1 && (course.session == 'F' || course.session == 'Y')) {
                 course.startDate = new Date(2015, 09, 14);
-            } else if (course.indexOf('Winter') != -1 && (course.session == 'S' || course.session == 'Y')) {
+            } else if (session.indexOf('Winter') != -1 && (course.session == 'S' || course.session == 'Y')) {
                 course.startDate = new Date(2015, 01, 11);
             } else {
                 console.error('Session code \'' + course.session + '\' not recognized');
@@ -321,10 +322,12 @@
 
     // Detect the page
     var rosiURL = 'https://sws.rosi.utoronto.ca/sws/timetable/scheduleView.do';
-    var acornURL = 'https://acorn.utoronto.ca/sws/timetable.scheduleView.do#/';
+    var acornURL = 'https://acorn.utoronto.ca/sws/timetable/scheduleView.do#/';
+    var ROSI = false;
     // RoSI
     if (location.href.indexOf(rosiURL) != -1) {
         console.log('RoSI detected.');
+        ROSI = true;
         // Load jQuery
         var uid = "__9384nalksdfalkj04320";
         //create onload-callback function
