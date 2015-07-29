@@ -25,7 +25,7 @@
             .text()
             // A very aggressive .trim() function
             // using https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/String/trim
-             .replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
+            .replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
         console.log('Detected session "' + session + '"');
         return session;
     }
@@ -132,9 +132,15 @@
             console.log('Master timetable found! ' + numCourses + ' courses retrieved.');
             deferred.resolve(response);
         };
+        var url;
+        if (session.indexOf('Fall') != -1) {
+            url = 'https://raw.githack.com/Shadowen/ScheduleScraper/master/timetable-fall.js';
+        } else if (session.indexOf('Winter') != -1) {
+            url = 'https://raw.githack.com/Shadowen/ScheduleScraper/master/timetable-winter.js';
+        }
         $.ajax({
             dataType: "jsonp",
-            url: "https://raw.githack.com/Shadowen/ScheduleScraper/master/timetable-fall.js",
+            url: url,
             jsonpCallback: 'c311745ae7ee4925b17eb440fd06a31d',
             success: successCallback
         });
