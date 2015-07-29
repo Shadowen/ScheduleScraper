@@ -1,4 +1,4 @@
-// Acorn Schedule scraper v5.2
+// Acorn Schedule scraper v5.3
 
 // TODO
 // Automate import into Google Calendar
@@ -7,7 +7,7 @@
     var getLoadingPage = function() {
         var deferred = $.Deferred();
         $('body').data('f57b7ad2ab284e388323484708a031f7', deferred)
-        $.getScript('https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/master/LoadingPage.js');
+        $.getScript('https://raw.githack.com/Shadowen/ScheduleScraper/master/LoadingPage.js');
         return deferred.promise();
     }
 
@@ -131,7 +131,7 @@
         };
         $.ajax({
             dataType: "jsonp",
-            url: "https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/master/timetable-fall.js",
+            url: "https://raw.githack.com/Shadowen/ScheduleScraper/master/timetable-fall.js",
             jsonpCallback: 'c311745ae7ee4925b17eb440fd06a31d',
             success: successCallback
         });
