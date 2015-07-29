@@ -1,4 +1,4 @@
-// Acorn Schedule scraper v4.4
+// Acorn Schedule scraper v5.0
 
 // TODO
 // Automate import into Google Calendar
@@ -28,46 +28,48 @@
         return timestamp;
     }
 
-    var parseTimetable = function() {
+    var parseTimetable = function(session) {
         console.log('Parsing timetable...');
 
         var parseCourse = function(slotTag, dayNum, isPastNoon) {
-            var formatTime = function(time, isPastNoon) {
-                var timeSplit = time.split(':');
-                var hour = parseInt(timeSplit[0]);
-                if (isPastNoon && hour < 12) {
-                    hour += 12;
+            var formatTime = function(times, isPastNoon) {
+                var startTimeSplit = times[0].split(':');
+                var endTimeSplit = times[1].split(':');
+                var startHour = parseInt(startTimeSplit[0]);
+                var endHour = parseInt(endTimeSplit[0])
+                if (isPastNoon) {
+                    startHour += 12;
+                    endHour += 12;
+                } else if (startHour >= endHour) {
+                    endHour += 12;
                 }
-                var hourString = ('0' + hour.toString()).slice(-2);
-                var minuteString = timeSplit[1];
-                return hourString + '' + minuteString;
+                var startString = ('0' + startHour.toString()).slice(-2) + startTimeSplit[1];
+                var endString = ('0' + endHour.toString()).slice(-2) + endTimeSplit[1];
+                return [startString, endString];
             }
 
             var course = {};
-            var slotLines = slotTag.html().split('<br>');
+            var slotLines = slotTag.html().split('<br>').map(function(t) {
+                return t.trim();
+            });
             course.code = slotTag.contents().eq(0).text().trim();
             course.session = course.code.slice(-1);
             // TODO { Retrieve the actual course start dates
-            switch (course.session) {
-                case 'F':
-                    course.startDate = [new Date(2015, 09, 14)];
-                    break;
-                case 'S':
-                    course.startDate = [new Date(2015, 01, 11)];
-                    break;
-                case 'Y':
-                    course.startDate = [new Date(2015, 09, 14), new Date(2015, 01, 11)];
-                    break;
-                default:
-                    console.error('Session code \'' + course.session + '\' not recognized');
+            if (session.indexOf('Fall') != -1 && (course.session == 'F' || course.session == 'Y')) {
+                course.startDate = new Date(2015, 09, 14);
+            } else if (course.indexOf('Winter') != -1 && (course.session == 'S' || course.session == 'Y')) {
+                course.startDate = new Date(2015, 01, 11);
+            } else {
+                console.error('Session code \'' + course.session + '\' not recognized');
             }
             // }
             course.day = dayNum;
             course.meeting = slotTag.contents(".meet").text();
-            course.startTime = formatTime(slotTag.contents().eq(4).text().split("-")[0], isPastNoon);
-            course.endTime = formatTime(slotTag.contents().eq(4).text().split("-")[1], isPastNoon);
+            var times = formatTime(slotLines[2].split("-"), isPastNoon);
+            course.startTime = times[0];
+            course.endTime = times[1];
             course.room = slotTag.contents(".room").text();
-            course.isBiweekly = (slotTag.contents().eq(7).text() == '*');
+            course.isBiweekly = (slotTag.text().indexOf('*') != -1);
 
             return course;
         }
@@ -87,13 +89,11 @@
                     dayOffsets[dayNum]--;
                     continue;
                 }
-
                 var slotTag = tdTags.eq(tagNum++);
-
                 // Skip empty classes
                 if (slotTag.hasClass("time")) {
                     // Detect when we cross noon
-                    if (slotTag.text() == "12:00") {
+                    if (slotTag.text() == "1:00") {
                         isPastNoon = true;
                     }
                     continue;
@@ -114,16 +114,22 @@
 
     var getMasterTimetable = function(session) {
         console.log('Requesting master timetable for ' + session + '...');
-        return $.ajax({
+        var deferred = $.Deferred();
+        var successCallback = function(response, reason, obj) {
+            var numCourses = 0;
+            for (var key in response) {
+                numCourses++;
+            }
+            console.log('Master timetable found! ' + numCourses + ' courses retrieved.');
+            deferred.resolve(response);
+        };
+        $.ajax({
             dataType: "jsonp",
             url: "https://cdn.gitcdn.xyz/cdn/Shadowen/ScheduleScraper/master/timetable-fall.js",
-            jsonpCallback: 'c311745ae7ee4925b17eb440fd06a31d'
+            jsonpCallback: 'c311745ae7ee4925b17eb440fd06a31d',
+            success: successCallback
         });
-    }
-
-    var getResponseFromXHR = function(response, reason, obj) {
-        console.log('Master timetable found! ' + response.length + ' courses retrieved.');
-        return response;
+        return deferred.promise();
     }
 
     var decorateWithExtra = function(schedule, master) {
@@ -150,6 +156,7 @@
                 // }TODO
             } else {
                 console.error("Course start date not found for:");
+                console.log(master);
                 console.log(course);
             }
         }
@@ -225,10 +232,11 @@
                 }, '') + '\\n';
             }
             if (course.notes) {
-                icsString += 'Additional Notes: ' + course.notes + '\n';
+                icsString += 'Additional Notes: ' + course.notes;
             }
+            icsString += '\n';
             // TODO { Actually end the course when classes end
-            icsString += 'RRULE:FREQ=WEEKLY;' + (course.isBiweekly ? 'INTERVAL=2;' : '') + 'BYDAY=' + dayToString(course.day) + ';COUNT=' + course.isBiweekly ? '7' : '14\n';
+            icsString += 'RRULE:FREQ=WEEKLY;' + (course.isBiweekly ? 'INTERVAL=2;' : '') + 'BYDAY=' + dayToString(course.day) + ';COUNT=' + (course.isBiweekly ? '7' : '14') + '\n';
             // } TODO
             icsString += 'END:VEVENT\n';
         }
@@ -245,80 +253,65 @@
             type: 'text/plain'
         });
         var fileNameToSaveAs = "scheduleScraper_export.ics";
-        var downloadLink;
-        if ((downloadLink = $('#download-link')).length == 0) {
+        var downloadLink = $('#download-link');
+        if (downloadLink.length == 0) {
             downloadLink = $(document.createElement('a'));
         }
         downloadLink.html("Download as .ics")
             .attr('id', 'download-link')
             .attr('download', fileNameToSaveAs)
-            .attr('href', window.URL.createObjectURL(textFileAsBlob));
-        // Copy the styling from the rest of the site.
-        // Can't use classes because the app specifically serves css for each page
-        downloadLink.css('color', '#fff')
+            .attr('href', window.URL.createObjectURL(textFileAsBlob))
+            // Copy the styling from the rest of the site.
+            // Can't use classes because the app specifically serves css for each page
+            .css('color', '#fff')
             .css('font-weight', 400)
             .css('background', '#002a5c')
             .css('border-radius', '5px')
             .css('padding', '6px 12px')
             .css('width', 'auto')
-            .css('font-size', '13px');
-        downloadLink.hover(function() {
-            $(this).css('background-color', '#003E8D');
-            $(this).css('text-decoration', 'none');
-        }, function() {
-            $(this).css('background-color', '#002a5c');
-        });
-        // Insert in proper location
-        $("table.sched").before(downloadLink);
+            .css('font-size', '13px')
+            .hover(function() {
+                $(this).css('background-color', '#003E8D');
+                $(this).css('text-decoration', 'none');
+            }, function() {
+                $(this).css('background-color', '#002a5c');
+            })
+            // Insert in proper location
+            .insertBefore('table.sched');
         console.log('Download button created!');
         return downloadLink;
     }
 
-        ////////// Main program
-    var correctURL = "https://acorn.utoronto.ca/sws/timetable/scheduleView.do#/";
-    if (window.location.href == correctURL) {
-        console.log("Script started @ " + getTimestamp() + "...");
-        // Actual things
-        var run = function() {
-            // Make a promise
-            $.when(
-                    // Loading screen
-                    getLoadingPage()
-                    .then(function() {
-                        console.log('Loading page complete!');
-                    }),
-                    // Other
-                    $.when(
-                        // (1) Parse the current page
-                        $.when(parseTimetable()),
-                        // (2) Retrieve master timetable
-                        $.when(getSession())
-                        .then(getMasterTimetable)
-                        .then(getResponseFromXHR)
-                    )
-                    .then(decorateWithExtra)
-                    // Generate the .ics
-                    .then(generateICS)
-                    // Create a download button
-                    .then(createDownloadButton)
-                )
-                // Programatically click the button to start the download
-                .then(function(loadingPage, button) {
-                    console.log('done!');
-                    console.log(loadingPage);
-                    console.log(button);
-                    button[0].click()
-                });
-        };
-        // Run immediately if page is loaded, else wait for the page to load
-        document.readyState == 'complete' ? run() : window.onload = run;
-    } else {
-        console.error('Attempted to run script on wrong URL!');
-        if (window.confirm("Please run this script on " + correctURL + "\nI can't hack into your ACORN account to grab your schedule for you...\nClick OK to go there now.\nClick Cancel to stay here.")) {
-            console.log('Redirecting to ACORN.');
-            window.location.href = correctURL;
-        } else {
-            console.log("Script not run.")
-        }
-    }
+    ////////// Main program
+    console.log("Script started...");
+    // Actual things
+    var run = function() {
+        // Make a promise
+        $.when(
+                // Loading screen
+                getLoadingPage()
+                .then(function() {
+                    console.log('Loading page complete!');
+                }),
+                // Other
+                $.when(getSession())
+                .then(function(session) {
+                    return $.when(parseTimetable(session), getMasterTimetable(session));
+                })
+                .then(decorateWithExtra)
+                // Generate the .ics
+                .then(generateICS)
+                // Create a download button
+                .then(createDownloadButton)
+            )
+            // Programatically click the button to start the download
+            .then(function(loadingPage, button) {
+                console.log('done!');
+                console.log(loadingPage);
+                console.log(button);
+                button[0].click()
+            });
+    };
+    // Run immediately if page is loaded, else wait for the page to load
+    document.readyState == 'complete' ? run() : window.onload = run;
 })();
