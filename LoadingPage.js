@@ -1,21 +1,18 @@
-/////
-// Based on
-// http://codepen.io/neilcarpenter/pen/oeGwD/
 (function() {
+    // Create the background
     var canvas = $('<canvas></canvas>')
         .css('position', 'fixed')
         .css('top', 0)
         .attr('height', window.innerHeight)
         .css('left', 0)
         .attr('width', window.innerWidth)
-        .css('background-color', 'rgba(0,0,0,0.9)')
+        .css('background-color', 'rgba(0,0,0,0.7)')
         .css('z-index', 9000)
         .hide()
         .appendTo('body')
         .fadeIn(1000);
     var canvasHeight = canvas.height();
     var canvasWidth = canvas.width();
-
 
     var stripCount = 25;
     var strips = [];
@@ -75,7 +72,7 @@
     for (var i = 0; i < stripCount; i++) {
         strips[i] = seedStrips(Math.floor(Math.random() * canvasHeight));
     };
-    (function draw() {
+    var canvasDrawTimer = setInterval(function draw() {
         function toRGBA(rgb, a) {
             return 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + a + ')';
         }
@@ -123,19 +120,18 @@
             }
             strip.y += strip.dy;
         }
-        setTimeout(draw, 30);
-    })();
-
+    }, 30);
 
     // Draw loading bar and text
-    // https://css-tricks.com/css3-progress-bars/
     (function update(container) {
         if (container) {
             update.deferred = $.Deferred();
             // Constructing DOM
             update.container = container;
             update.container
-                .css('cursor', 'progress');
+                .css('cursor', 'progress')
+                .appendTo('body')
+                .fadeIn(1000);
             overlay = $('<div></div>')
                 .css('position', 'fixed')
                 .css('top', '50%')
@@ -189,10 +185,8 @@
                 'Unpacking viruses...', 200,
                 'Installing keylogger...', 500,
                 'Verifying quantum tunnel...', 800,
-                'Hacking course database...', 300,
-                'Decrypting encryption...', 500,
-                'Deconflicting courses...', 400,
-                'Deploying thermonuclear weapons...', 300,
+                'Decrypting course database...', 500,
+                'Deploying thermonuclear weapons...', 500,
                 'Generating miniature black hole...', 700,
                 'Destroying evidence...', 900
             ];
@@ -226,18 +220,21 @@
             setTimeout(update, update.messages[update.index++])
         }
         return update.deferred.promise();
-    })($('<div></div>').appendTo('body'))
+    })($('<div></div>'))
+    // Cleanup
     .then(function(container) {
         var deferred = $.Deferred();
         container.children().fadeOut(1000);
         canvas.fadeOut(1000);
-        $('body').data('f57b7ad2ab284e388323484708a031f7').resolve();
+        // Tell the schedule scraper we're done
+        var scheduleScraperDeferred = $('body').data('f57b7ad2ab284e388323484708a031f7');
+        scheduleScraperDeferred ? scheduleScraperDeferred.resolve() : 0;
         setTimeout(function() {
-            deferred.resolve(container, canvas)
+            clearInterval(canvasDrawTimer);
+            deferred.resolve(container, canvas);
         }, 1000);
         return deferred.promise();
     }).then(function(container, canvas) {
-        // TODO
         container.remove();
         canvas.remove();
     });

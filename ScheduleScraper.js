@@ -1,8 +1,3 @@
-// Acorn Schedule scraper v5.3
-
-// TODO
-// Automate import into Google Calendar
-
 (function() {
     var getLoadingPage = function() {
         var deferred = $.Deferred();
@@ -24,7 +19,6 @@
             })
             .text()
             // A very aggressive .trim() function
-            // using https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/String/trim
             .replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
         console.log('Detected session "' + session + '"');
         return session;
@@ -63,7 +57,6 @@
             });
             course.code = slotTag.contents().eq(0).text().trim();
             course.session = course.code.slice(-1);
-            // TODO { Retrieve the actual course start dates
             if (session.indexOf('Fall') != -1 && (course.session == 'F' || course.session == 'Y')) {
                 course.startDate = new Date(2015, 09, 14);
             } else if (session.indexOf('Winter') != -1 && (course.session == 'S' || course.session == 'Y')) {
@@ -71,7 +64,6 @@
             } else {
                 console.error('Session code \'' + course.session + '\' not recognized');
             }
-            // }
             course.day = dayNum;
             course.meeting = slotTag.contents(".meet").text();
             var times = formatTime(slotLines[2].split("-"), isPastNoon);
@@ -157,18 +149,14 @@
             var startTime = course.startTime;
             var endTime = course.endTime;
             var room = course.room.replace(/[ ]/g, '');
-            // TODO{ temporary fix for courses with multiple locations
             var index = room.indexOf('/');
             if (index > 0) {
                 room = room.slice(0, index);
             }
-            // }TODO
-            // TODO{ Replace master[0] with the appropriate course date (especially Y courses)
             if (master[code] && master[code][section] && master[code][section][day + startTime + endTime + room]) {
                 course.startDate = new Date(master[code][section][day + startTime + endTime + room][0].startDate);
                 course.professors = master[code][section][day + startTime + endTime + room][0].professors;
                 course.notes = master[code][section][day + startTime + endTime + room][0].notes;
-                // }TODO
             } else {
                 console.error("Course start date not found for:");
                 console.log(master);
@@ -215,7 +203,7 @@
                 case "TUT":
                     return "Tutorial";
                 case "PRA":
-                    return "LAB"
+                    return "Lab"
                 default:
                     console.error("Error parsing meeting code " + meetingCode);
                     return "Error";
@@ -250,9 +238,7 @@
                 icsString += 'Additional Notes: ' + course.notes;
             }
             icsString += '\n';
-            // TODO { Actually end the course when classes end
             icsString += 'RRULE:FREQ=WEEKLY;' + (course.isBiweekly ? 'INTERVAL=2;' : '') + 'BYDAY=' + dayToString(course.day) + ';COUNT=' + (course.isBiweekly ? '7' : '14') + '\n';
-            // } TODO
             icsString += 'END:VEVENT\n';
         }
         icsString += 'END:VCALENDAR\n';
@@ -285,9 +271,10 @@
             .css('padding', '6px 12px')
             .css('width', 'auto')
             .css('font-size', '13px')
+            .css('text-decoration', 'none')
             .hover(function() {
                 $(this).css('background-color', '#003E8D');
-                $(this).css('text-decoration', 'none');
+                // $(this).css('text-decoration', 'none');
             }, function() {
                 $(this).css('background-color', '#002a5c');
             })
