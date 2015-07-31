@@ -216,7 +216,7 @@
         icsString = 'BEGIN:VCALENDAR\n';
         icsString += 'PRODID:Wesley Inc.\n';
         icsString += 'CALSCALE:GREGORIAN\n';
-        icsString += 'METHOD:REQUEST\n';
+        icsString += 'METHOD:PUBLISH\n';
         for (var c = 0; c < schedule.length; c++) {
             var course = schedule[c];
             var dateString = course.startDate.getFullYear().toString() +
