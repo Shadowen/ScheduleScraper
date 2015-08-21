@@ -159,8 +159,7 @@
                 course.notes = master[code][section][day + startTime + endTime + room][0].notes;
             } else {
                 console.error("Course start date not found for:");
-                console.log(master);
-                console.log(course);
+                console.log(JSON.stringify(course));
             }
         }
         console.log("Decorations successful!");
@@ -228,8 +227,8 @@
             icsString += 'UID:' + (today.getTime() + c) + '@heungs.com\n';
             icsString += 'LOCATION:' + course.room + '\n';
             icsString += 'SUMMARY:' + course.code + ' ' + formatMeeting(course.meeting) + '\n';
-            icsString += 'DESCRIPTION:Course code:' + course.code + '\\nSection: ' + course.meeting + '\\n';
-            if (course.professors.length > 0) {
+            icsString += 'DESCRIPTION:Course code: ' + course.code + '\\nSection: ' + course.meeting + '\\n';
+            if (course.professors) {
                 icsString += 'Professors: ' + course.professors.reduce(function(prev, cur, index) {
                     return prev + (index == 0 ? '' : ', ') + cur.first + ' ' + cur.last;
                 }, '') + '\\n';
