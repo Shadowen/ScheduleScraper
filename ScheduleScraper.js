@@ -148,18 +148,17 @@
             var day = course.day;
             var startTime = course.startTime;
             var endTime = course.endTime;
-            var room = course.room.replace(/[ ]/g, '');
-            var index = room.indexOf('/');
-            if (index > 0) {
-                room = room.slice(0, index);
-            }
-            if (master[code] && master[code][section] && master[code][section][day + startTime + endTime + room]) {
-                course.startDate = new Date(master[code][section][day + startTime + endTime + room][0].startDate);
-                course.professors = master[code][section][day + startTime + endTime + room][0].professors;
-                course.notes = master[code][section][day + startTime + endTime + room][0].notes;
-            } else {
-                console.error("Course start date not found for:");
-                console.log(JSON.stringify(course));
+            var rooms = course.room.replace(/[ ]/g, '').split('/');
+            for (var r = 0; r < rooms.length; r++) {
+                var room = rooms[r];
+                if (master[code] && master[code][section] && master[code][section][day + startTime + endTime + room]) {
+                    course.startDate = new Date(master[code][section][day + startTime + endTime + room][0].startDate);
+                    course.professors = master[code][section][day + startTime + endTime + room][0].professors;
+                    course.notes = master[code][section][day + startTime + endTime + room][0].notes;
+                } else {
+                    console.error("Course start date not found for:");
+                    console.log(JSON.stringify(course));
+                }
             }
         }
         console.log("Decorations successful!");
