@@ -42,10 +42,11 @@
     var parseTimetable = function(session) {
         console.log('Parsing timetable...');
 
-        var parseCourse = function(slotTag, dayNum, isPastNoon) {
+        var parseCourse = function(meetingInfo, dayNum, isPastNoon) {
             var formatTime = function(times, isPastNoon) {
-                var startTimeSplit = times[0].split(':');
-                var endTimeSplit = times[1].split(':');
+                timeSplit = times.split('-');
+                var startTimeSplit = timeSplit[0].split(':');
+                var endTimeSplit = timeSplit[1].split(':');
                 var startHour = parseInt(startTimeSplit[0]);
                 var endHour = parseInt(endTimeSplit[0])
                 if (isPastNoon) {
@@ -59,26 +60,30 @@
                 return [startString, endString];
             }
 
+            console.log(meetingInfo);
+
             var course = {};
-            var slotLines = slotTag.html().split('<br>').map(function(t) {
-                return t.trim();
-            });
-            course.code = slotTag.contents().eq(0).text().trim();
+            course.code = meetingInfo.find('.courseCodeInfo').text().trim();
+            if (course.code.slice(-1) == '*'){
+                course.isBiweekly = true;
+                course.code= course.code.slice(0, -2);
+            }else{
+                course.isBiweekly = false;
+            }
             course.session = course.code.slice(-1);
             if (session.indexOf('Fall') != -1 && (course.session == 'F' || course.session == 'Y')) {
                 course.startDate = new Date(2015, 09, 14);
             } else if (session.indexOf('Winter') != -1 && (course.session == 'S' || course.session == 'Y')) {
                 course.startDate = new Date(2015, 01, 11);
             } else {
-                console.error('Session code \'' + course.session + '\' not recognized');
+                console.error('Session code \'' + course.session + '\' not recognized for \'' + course.code + '\'');
             }
             course.day = dayNum;
-            course.meeting = slotTag.contents(".meet").text();
-            var times = formatTime(slotLines[2].split("-"), isPastNoon);
+            course.meeting = meetingInfo.contents(".courseSection").text();
+            var times = formatTime(meetingInfo.children('.meetInfo').text(), isPastNoon);
             course.startTime = times[0];
             course.endTime = times[1];
-            course.room = slotTag.contents(".room").text();
-            course.isBiweekly = (slotTag.text().indexOf('*') != -1);
+            course.room = meetingInfo.children(".roomInfo").text();
 
             return course;
         }
@@ -88,7 +93,11 @@
         // Keeps track of how many multi-row courses are eating up columns invisibly
         var dayOffsets = [0, 0, 0, 0, 0];
         var isPastNoon = false;
-        $('table.sched>tbody>tr').each(function(i, r) {
+        $('table.timetableSchedule>tbody>tr').each(function(i, r) {
+            // Skip the first row (header row)
+            if (i == 0){
+                return 0;
+            }
             var tdTags = $(this).children('td');
             var tagNum = 0;
             for (var dayNum = 0; dayNum <= 5; dayNum++) {
@@ -98,19 +107,23 @@
                     dayOffsets[dayNum]--;
                     continue;
                 }
+                console.log(tdTags);
+                console.log(tagNum);
                 var slotTag = tdTags.eq(tagNum++);
                 // Skip empty classes
-                if (slotTag.hasClass("time")) {
+                if (slotTag.hasClass("timeOfDay")) {
                     // Detect when we cross noon
                     if (slotTag.text() == "1:00") {
                         isPastNoon = true;
                     }
                     continue;
-                } else if (slotTag.hasClass("day") || slotTag.hasClass("hourEmpty") || slotTag.hasClass("empty")) {
+                } else if (slotTag.hasClass("emptySlot")) {
                     continue;
                 }
                 // Parse valid course slots
-                schedule.push(parseCourse(slotTag, dayNum, isPastNoon));
+                console.log(slotTag.html());
+                var meetingInfo = slotTag.children('.meetingInfo');
+                schedule.push(parseCourse(meetingInfo, dayNum, isPastNoon));
                 // Multi-row courses
                 if (slotTag.attr('rowspan') != null) {
                     dayOffsets[dayNum] = parseInt(slotTag.attr('rowspan')) - 1;
