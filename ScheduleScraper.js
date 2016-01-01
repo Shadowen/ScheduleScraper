@@ -2,7 +2,15 @@
     var getLoadingPage = function() {
         var deferred = $.Deferred();
         $('body').data('f57b7ad2ab284e388323484708a031f7', deferred)
-        $.getScript('https://raw.githack.com/Shadowen/ScheduleScraper/master/LoadingPage.js');
+        $.ajax('https://raw.githack.com/Shadowen/ScheduleScraper/master/LoadingPage.js', {
+            success: function() {
+                console.log("Loading page retrieved.")
+            },
+            error: function() {
+                console.log("Loading page failed thrown");
+                deferred.reject("Ajax error while trying to find loading page.");
+            }
+        });
         return deferred.promise();
     }
 
@@ -27,7 +35,7 @@
     var getTimestamp = function() {
         console.log('Getting timestamp...');
         var timestamp = $('td.section>p.note.skipprint').text().trim()
-        console.log('Got timestamp!');
+        console.log('Got timestamp! "' + timestamp + '"');
         return timestamp;
     }
 
@@ -124,45 +132,62 @@
             console.log('Master timetable found! ' + numCourses + ' courses retrieved.');
             deferred.resolve(response);
         };
+        var errorCallback = function(jqXHR, textStatus, errorThrown) {
+            deferred.reject(textStatus, errorThrown);
+        }
         var url;
         if (session.indexOf('Fall') != -1) {
             url = 'https://raw.githack.com/Shadowen/ScheduleScraper/master/timetable-fall.js';
         } else if (session.indexOf('Winter') != -1) {
             url = 'https://raw.githack.com/Shadowen/ScheduleScraper/master/timetable-winter.js';
+        } else {
+            console.log("Invalid session code thrown!");
+            deferred.reject("Invalid session code!");
         }
         $.ajax({
             dataType: "jsonp",
             url: url,
             jsonpCallback: 'c311745ae7ee4925b17eb440fd06a31d',
-            success: successCallback
+            success: successCallback,
+            error: errorCallback
         });
         return deferred.promise();
     }
 
     var decorateWithExtra = function(schedule, master) {
+        var deferred = $.Deferred();
         console.log("Starting decorations...");
-        for (var i = 0; i < schedule.length; i++) {
-            var course = schedule[i];
-            var code = course.code.replace(/[ ]/g, '');
-            var section = course.meeting.replace(/[ ]/g, '');
-            var day = course.day;
-            var startTime = course.startTime;
-            var endTime = course.endTime;
-            var rooms = course.room.replace(/[ ]/g, '').split('/');
-            for (var r = 0; r < rooms.length; r++) {
-                var room = rooms[r];
-                if (master[code] && master[code][section] && master[code][section][day + startTime + endTime + room]) {
-                    course.startDate = new Date(master[code][section][day + startTime + endTime + room][0].startDate);
-                    course.professors = master[code][section][day + startTime + endTime + room][0].professors;
-                    course.notes = master[code][section][day + startTime + endTime + room][0].notes;
-                } else {
-                    console.error("Course start date not found for:");
-                    console.log(JSON.stringify(course));
+        try {
+            for (var i = 0; i < schedule.length; i++) {
+                var course = schedule[i];
+                var code = course.code.replace(/[ ]/g, '');
+                var section = course.meeting.replace(/[ ]/g, '');
+                var day = course.day;
+                var startTime = course.startTime;
+                var endTime = course.endTime;
+                var rooms = course.room.replace(/[ ]/g, '').split('/');
+                for (var r = 0; r < rooms.length; r++) {
+                    var room = rooms[r];
+                    if (master[code] && master[code][section] && master[code][section][day + startTime + endTime + room]) {
+                        course.startDate = new Date(master[code][section][day + startTime + endTime + room][0].startDate);
+                        course.professors = master[code][section][day + startTime + endTime + room][0].professors;
+                        course.notes = master[code][section][day + startTime + endTime + room][0].notes;
+                    } else {
+                        throw {
+                            text: "Course start date not found for:",
+                            course: course
+                        };
+                    }
                 }
             }
+            deferred.resolve(schedule);
+        } catch (error) {
+            console.error("Error " + error.text + " in decoration of:");
+            console.error(JSON.stringify(error.course));
+            deferred.reject(error);
         }
         console.log("Decorations successful!");
-        return schedule;
+        return deferred.promise();
     }
 
     var generateICS = function(schedule) {
@@ -307,15 +332,13 @@
             // Programatically click the button to start the download
             .then(function(loadingPage, button) {
                 console.log('done!');
-                console.log(loadingPage);
-                console.log(button);
                 button[0].click()
             });
     };
 
     // Detect the page
     var rosiURL = 'https://sws.rosi.utoronto.ca/sws/timetable/scheduleView.do';
-    var acornURL = 'https://acorn.utoronto.ca/sws/timetable/scheduleView.do#/';
+    var acornURL = 'https://acorn.utoronto.ca/sws/timetable/main.do?main.dispatch#/calendar';
     var ROSI = false;
     // RoSI
     if (location.href.indexOf(rosiURL) != -1) {
