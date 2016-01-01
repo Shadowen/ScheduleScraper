@@ -60,21 +60,21 @@
                 return [startString, endString];
             }
 
-            console.log(meetingInfo);
-
             var course = {};
+            course.name = meetingInfo.find('.courseCodeInfo').attr('title');
             course.code = meetingInfo.find('.courseCodeInfo').text().trim();
-            if (course.code.slice(-1) == '*'){
+            if (course.code.slice(-1) == '*') {
                 course.isBiweekly = true;
-                course.code= course.code.slice(0, -2);
-            }else{
+                course.code = course.code.slice(0, -2);
+            } else {
                 course.isBiweekly = false;
             }
             course.session = course.code.slice(-1);
-            if (session.indexOf('Fall') != -1 && (course.session == 'F' || course.session == 'Y')) {
-                course.startDate = new Date(2015, 09, 14);
-            } else if (session.indexOf('Winter') != -1 && (course.session == 'S' || course.session == 'Y')) {
-                course.startDate = new Date(2015, 01, 11);
+            var year = session.split(" ")[0];
+            if (session.indexOf("Fall") != -1 && (course.session == 'F' || course.session == 'Y')) {
+                course.startDate = new Date(year, 8, 1);
+            } else if (session.indexOf("Winter") != -1 && (course.session == 'S' || course.session == 'Y')) {
+                course.startDate = new Date(year, 0, 1);
             } else {
                 console.error('Session code \'' + course.session + '\' not recognized for \'' + course.code + '\'');
             }
@@ -95,7 +95,7 @@
         var isPastNoon = false;
         $('table.timetableSchedule>tbody>tr').each(function(i, r) {
             // Skip the first row (header row)
-            if (i == 0){
+            if (i == 0) {
                 return 0;
             }
             var tdTags = $(this).children('td');
@@ -107,8 +107,6 @@
                     dayOffsets[dayNum]--;
                     continue;
                 }
-                console.log(tdTags);
-                console.log(tagNum);
                 var slotTag = tdTags.eq(tagNum++);
                 // Skip empty classes
                 if (slotTag.hasClass("timeOfDay")) {
@@ -121,7 +119,6 @@
                     continue;
                 }
                 // Parse valid course slots
-                console.log(slotTag.html());
                 var meetingInfo = slotTag.children('.meetingInfo');
                 schedule.push(parseCourse(meetingInfo, dayNum, isPastNoon));
                 // Multi-row courses
@@ -170,35 +167,36 @@
     var decorateWithExtra = function(schedule, master) {
         var deferred = $.Deferred();
         console.log("Starting decorations...");
-        try {
-            for (var i = 0; i < schedule.length; i++) {
-                var course = schedule[i];
-                var code = course.code.replace(/[ ]/g, '');
-                var section = course.meeting.replace(/[ ]/g, '');
-                var day = course.day;
-                var startTime = course.startTime;
-                var endTime = course.endTime;
-                var rooms = course.room.replace(/[ ]/g, '').split('/');
-                for (var r = 0; r < rooms.length; r++) {
-                    var room = rooms[r];
-                    if (master[code] && master[code][section] && master[code][section][day + startTime + endTime + room]) {
-                        course.startDate = new Date(master[code][section][day + startTime + endTime + room][0].startDate);
-                        course.professors = master[code][section][day + startTime + endTime + room][0].professors;
-                        course.notes = master[code][section][day + startTime + endTime + room][0].notes;
-                    } else {
-                        throw {
-                            text: "Course start date not found for:",
-                            course: course
-                        };
-                    }
+        for (var i = 0; i < schedule.length; i++) {
+            // Extract some information and format it the way it is done in the master timetable
+            var course = schedule[i];
+            var code = course.code.replace(/[ ]/g, '');
+            var section = course.meeting.replace(/[ ]/g, '');
+            var day = course.day;
+            var startTime = course.startTime;
+            var endTime = course.endTime;
+            var rooms = course.room.replace(/[ ]/g, '').split('/');
+
+            var courseFound = false;
+            // Try all the rooms it could be stored under
+            for (var r = 0; r < rooms.length; r++) {
+                var room = rooms[r];
+                if (master[code] && master[code][section] && master[code][section][day + startTime + endTime + room]) {
+                    courseFound = true;
+                    course.startDate = new Date(master[code][section][day + startTime + endTime + room][0].startDate);
+                    course.professors = master[code][section][day + startTime + endTime + room][0].professors;
+                    course.notes = master[code][section][day + startTime + endTime + room][0].notes;
                 }
             }
-            deferred.resolve(schedule);
-        } catch (error) {
-            console.error("Error " + error.text + " in decoration of:");
-            console.error(JSON.stringify(error.course));
-            deferred.reject(error);
+            // The course was not found in the master timetable
+            if (!courseFound) {
+                console.log("Course " + code + ":" + section + "@" + (day + startTime + endTime + room) + " not found in master timetable.")
+                course.professors = [];
+                course.notes = "";
+            }
         }
+        deferred.resolve(schedule);
+
         console.log("Decorations successful!");
         return deferred.promise();
     }
@@ -263,7 +261,7 @@
             icsString += 'DTEND:' + dateString + 'T' + course.endTime + '00\n';
             icsString += 'UID:' + (today.getTime() + c) + '@heungs.com\n';
             icsString += 'LOCATION:' + course.room + '\n';
-            icsString += 'SUMMARY:' + course.code + ' ' + formatMeeting(course.meeting) + '\n';
+            icsString += 'SUMMARY:' + (course.name || course.code) + ' ' + formatMeeting(course.meeting) + '\n';
             icsString += 'DESCRIPTION:Course code: ' + course.code + '\\nSection: ' + course.meeting + '\\n';
             if (course.professors) {
                 icsString += 'Professors: ' + course.professors.reduce(function(prev, cur, index) {
@@ -305,6 +303,7 @@
             .css('background', '#002a5c')
             .css('border-radius', '5px')
             .css('padding', '6px 12px')
+            .css('margin', '')
             .css('width', 'auto')
             .css('font-size', '13px')
             .css('text-decoration', 'none')
@@ -315,7 +314,7 @@
                 $(this).css('background-color', '#002a5c');
             })
             // Insert in proper location
-            .insertBefore('table.sched');
+            .insertBefore('table.timetableSchedule');
         console.log('Download button created!');
         return downloadLink;
     }
