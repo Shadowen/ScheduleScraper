@@ -382,35 +382,33 @@
 
     // Detect the page
     var acornURL = 'https://acorn.utoronto.ca/sws/timetable/main.do?main.dispatch#/calendar';
-    // if (location.href.indexOf(acornURL) != -1) {
-    console.log('ACORN detected');
-    // Load jQuery
-    var importScript = (function(oHead) {
-        function loadError(oError) {
-            throw new URIError("The script " + oError.target.src + " is not accessible.");
-        }
-        return function(sSrc, fOnload) {
-            var oScript = document.createElement("script");
-            oScript.type = "text\/javascript";
-            oScript.onerror = loadError;
-            if (fOnload) {
-                oScript.onload = fOnload;
+    if (location.href.indexOf(acornURL) != -1) {
+        console.log('ACORN detected');
+        // Load jQuery
+        var importScript = (function(oHead) {
+            function loadError(oError) {
+                throw new URIError("The script " + oError.target.src + " is not accessible.");
             }
-            oHead.appendChild(oScript);
-            oScript.src = sSrc;
+            return function(sSrc, fOnload) {
+                var oScript = document.createElement("script");
+                oScript.type = "text\/javascript";
+                oScript.onerror = loadError;
+                if (fOnload) {
+                    oScript.onload = fOnload;
+                }
+                oHead.appendChild(oScript);
+                oScript.src = sSrc;
+            }
+        })(document.head || document.getElementsByTagName("head")[0]);
+
+        importScript('https://code.jquery.com/jquery-2.1.4.min.js', run)
+    } else {
+        if (window.confirm("Please run this script on the page where you can see your timetable!\n" +
+                "I can 't hack into your ACORN account to grab your schedule for you...\n" +
+                "Click OK to go there now.\n Click Cancel to stay here.")) {
+            window.location.href = acornURL;
+        } else {
+            console.log("Script not run.")
         }
-    })(document.head || document.getElementsByTagName("head")[0]);
-
-    importScript('https://code.jquery.com/jquery-2.1.4.min.js', run)
-
-    // } 
-    // else {
-    //     if (window.confirm("Please run this script on the page where you can see your timetable!\n" +
-    //             "I can 't hack into your ACORN account to grab your schedule for you...\n" +
-    //             "Click OK to go there now.\n Click Cancel to stay here.")) {
-    //         window.location.href = acornURL;
-    //     } else {
-    //         console.log("Script not run.")
-    //     }
-    // }
+    }
 })();
