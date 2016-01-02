@@ -2,7 +2,7 @@
     var getLoadingPage = function() {
         var deferred = jQuery.Deferred();
         jQuery('body').data('f57b7ad2ab284e388323484708a031f7', deferred)
-        jQuery.ajax('https://raw.githack.com/Shadowen/ScheduleScraper/master/LoadingPage.js', {
+        jQuery.ajax('https://raw.githack.com/Shadowen/ScheduleScraper/development/LoadingPage.js', {
             success: function() {
                 console.log("Loading page retrieved.")
             },
@@ -177,9 +177,9 @@
         }
         var url;
         if (session.indexOf('Fall') != -1) {
-            url = 'https://raw.githack.com/Shadowen/ScheduleScraper/master/timetable-fall.js';
+            url = 'https://raw.githack.com/Shadowen/ScheduleScraper/development/timetable-fall.js';
         } else if (session.indexOf('Winter') != -1) {
-            url = 'https://raw.githack.com/Shadowen/ScheduleScraper/master/timetable-winter.js';
+            url = 'https://raw.githack.com/Shadowen/ScheduleScraper/development/timetable-winter.js';
         } else {
             console.log("Invalid session code thrown!");
             deferred.reject("Invalid session code!");
@@ -353,6 +353,7 @@
     console.log("Script started...");
     // Actual things
     var run = function() {
+        jQuery.noConflict();
         console.log('jQuery ' + jQuery.fn.jquery + ' loaded.');
         // Make a promise
         jQuery.when(

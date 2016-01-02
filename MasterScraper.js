@@ -27,7 +27,7 @@ var withJQuery = function(success) {
     }
 };
 
-withJQuery(function($) {
+withJQuery(function(jQuery) {
     var parseMasterTimetable = function() {
         console.log('Parsing master timetable...');
         // Check if the two arrays have the same names in them
@@ -66,12 +66,12 @@ withJQuery(function($) {
         }
 
         var master = {};
-        $('a > table').not(':contains("Course Prefixes")').each(function() {
+        jQuery('a > table').not(':contains("Course Prefixes")').each(function() {
             // 3 Letter course prefix (ie. AER)
-            var prefix = $(this).children('caption').text();
-            var tbody = $(this).children('tbody');
+            var prefix = jQuery(this).children('caption').text();
+            var tbody = jQuery(this).children('tbody');
             tbody.children('tr:not(:has(th))').each(function() {
-                var tr = $(this);
+                var tr = jQuery(this);
                 var tds = tr.children();
                 // Start parsing!
                 var code = tds.eq(0).text();
@@ -82,7 +82,7 @@ withJQuery(function($) {
                 var finishTime = tds.eq(5).text().replace(/[:]/g, '');
                 var location = tds.eq(6).text();
                 // An array of the professors teaching the course
-                var professors = $.map($.grep(tds.eq(7).text().split(" and "), function(e) {
+                var professors = jQuery.map(jQuery.grep(tds.eq(7).text().split(" and "), function(e) {
                     return /\S/.test(e);
                 }), function(name) {
                     var splitName = name.split(',');
@@ -113,7 +113,7 @@ withJQuery(function($) {
 
     var downloadString = function(string) {
         console.log('Creating download...');
-        $(document.createElement('a'))
+        jQuery(document.createElement('a'))
             .css('display', 'none')
             .attr('download', location.pathname.slice(1).replace(/[\/]/g, '-').replace('.html', '') + ".js")
             .attr('href', window.URL.createObjectURL(
@@ -124,7 +124,7 @@ withJQuery(function($) {
     }
 
     ///// Main program
-    $.when(parseMasterTimetable())
+    jQuery.when(parseMasterTimetable())
         .then(function(master) {
             console.log(master);
             return master;

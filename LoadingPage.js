@@ -1,6 +1,6 @@
 (function() {
     // Create the background
-    var canvas = $('<canvas></canvas>')
+    var canvas = jQuery('<canvas></canvas>')
         .css('position', 'fixed')
         .css('top', 0)
         .attr('height', window.innerHeight)
@@ -125,14 +125,14 @@
     // Draw loading bar and text
     (function update(container) {
         if (container) {
-            update.deferred = $.Deferred();
+            update.deferred = jQuery.Deferred();
             // Constructing DOM
             update.container = container;
             update.container
                 .css('cursor', 'progress')
                 .appendTo('body')
                 .fadeIn(1000);
-            overlay = $('<div></div>')
+            overlay = jQuery('<div></div>')
                 .css('position', 'fixed')
                 .css('top', '50%')
                 .css('left', '50%')
@@ -140,11 +140,11 @@
                 .css('color', 'rgba(255,255,255,0.8)')
                 .css('font-size', 'large')
                 .css('z-index', 9001);
-            update.textBox = $('<div></div>')
+            update.textBox = jQuery('<div></div>')
                 .attr('id', 'loading-text')
                 .text('Please hold...');
             overlay.append(update.textBox);
-            update.progressBarContainer = $('<div></div>')
+            update.progressBarContainer = jQuery('<div></div>')
                 .css('position', 'relative')
                 .css('height', '40px')
                 .css('width', '30vw')
@@ -154,7 +154,7 @@
                 .css('margin', '10px')
                 .css('box-shadow', 'inset 0 -1px 1px rgba(255,255,255,0.3)')
                 .css('text-align', 'left');
-            update.progressBar = $('<span></span>')
+            update.progressBar = jQuery('<span></span>')
                 .css('display', 'block')
                 .css('height', '100%')
                 .css('width', '0')
@@ -169,7 +169,7 @@
             update.progressBarContainer.append(update.progressBar);
             overlay.append(update.progressBarContainer);
             update.container.append(overlay);
-            update.close = $('<div></div>').attr('id', 'close')
+            update.close = jQuery('<div></div>').attr('id', 'close')
                 .text('stop')
                 .css('color', 'rgba(255,0,0,0.8)')
                 .css('font-size', 'larger')
@@ -220,14 +220,14 @@
             setTimeout(update, update.messages[update.index++])
         }
         return update.deferred.promise();
-    })($('<div></div>'))
+    })(jQuery('<div></div>'))
     // Cleanup
     .then(function(container) {
-        var deferred = $.Deferred();
+        var deferred = jQuery.Deferred();
         container.children().fadeOut(1000);
         canvas.fadeOut(1000);
         // Tell the schedule scraper we're done
-        var scheduleScraperDeferred = $('body').data('f57b7ad2ab284e388323484708a031f7');
+        var scheduleScraperDeferred = jQuery('body').data('f57b7ad2ab284e388323484708a031f7');
         scheduleScraperDeferred ? scheduleScraperDeferred.resolve() : 0;
         setTimeout(function() {
             clearInterval(canvasDrawTimer);
