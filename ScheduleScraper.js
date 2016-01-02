@@ -1,8 +1,8 @@
 (function() {
     var getLoadingPage = function() {
-        var deferred = $.Deferred();
-        $('body').data('f57b7ad2ab284e388323484708a031f7', deferred)
-        $.ajax('https://raw.githack.com/Shadowen/ScheduleScraper/master/LoadingPage.js', {
+        var deferred = jQuery.Deferred();
+        jQuery('body').data('f57b7ad2ab284e388323484708a031f7', deferred)
+        jQuery.ajax('https://raw.githack.com/Shadowen/ScheduleScraper/master/LoadingPage.js', {
             success: function() {
                 console.log("Loading page retrieved.")
             },
@@ -17,7 +17,7 @@
     // Retrieves the session information from the current page
     var getSession = function() {
         console.log('Getting session...');
-        var session = $('div.session-info>span:contains("Session")')
+        var session = jQuery('div.session-info>span:contains("Session")')
             .next()
             .contents()
             .filter(function() {
@@ -25,14 +25,14 @@
             })
             .text()
             // A very aggressive .trim() function
-            .replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
+            .replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+jQuery/g, '')
         console.log('Detected session "' + session + '"');
         return session;
     }
 
     var getTimestamp = function() {
         console.log('Getting timestamp...');
-        var timestamp = $('td.section>p.note.skipprint').text().trim()
+        var timestamp = jQuery('td.section>p.note.skipprint').text().trim()
         console.log('Got timestamp! "' + timestamp + '"');
         return timestamp;
     }
@@ -96,25 +96,24 @@
         // Keeps track of how many multi-row courses are eating up rows invisibly
         var colOffsets = [];
         var isPastNoon = false;
-        $('table.timetableSchedule>tbody>tr').each(function(i, r) {
+        jQuery('table.timetableSchedule>tbody>tr').each(function(i, r) {
             // The first row (header with day-of-week info)
             if (i == 0) {
-                $(this).children('th').each(function(i, r) {
+                jQuery(this).children('th').each(function(i, r) {
                     var prevColumnStart = dayColumnStart[i];
-                    var thisColumnSpan = +($(this).attr('colspan') || 1);
+                    var thisColumnSpan = +(jQuery(this).attr('colspan') || 1);
                     numColumns += thisColumnSpan;
                     dayColumnStart.push(prevColumnStart + thisColumnSpan);
                     colOffsets.push(0);
                 });
                 return true;
             }
-            var tdTags = $(this).contents().filter(function() {
+            var tdTags = jQuery(this).contents().filter(function() {
                 // http://stackoverflow.com/questions/1623734/selecting-html-comments-with-jquery
                 return this.nodeType == 1 || this.nodeType == 8;
             });
             var dayNum = -1;
             for (var columnNum = 0;; columnNum++) {
-                console.log(colOffsets);
                 // If the column is a new day
                 if (dayColumnStart.indexOf(columnNum) != -1) {
                     dayNum++;
@@ -128,7 +127,7 @@
                 if (colOffsets[columnNum] > 0) {
                     colOffsets[columnNum]--;
                     continue;
-                }else if (slotTag.is(function() {
+                } else if (slotTag.is(function() {
                         return this.nodeType == 8;
                     })) {
                     colOffsets[columnNum]--;
@@ -143,7 +142,7 @@
                     continue;
                 } else if (slotTag.hasClass("emptySlot")) {
                     continue;
-                } 
+                }
                 // Parse valid course slots
                 var meetingInfo = slotTag.children('.meetingInfo');
                 schedule.push(parseCourse(meetingInfo, dayNum, isPastNoon));
@@ -154,7 +153,7 @@
                     for (var c = 0; c < +(slotTag.attr('colspan') || 1); c++) {
                         colOffsets[columnNum + c] = rowSpan;
                     }
-                    colOffsets[columnNum ] -= 1;
+                    colOffsets[columnNum] -= 1;
                 }
             }
         });
@@ -164,7 +163,7 @@
 
     var getMasterTimetable = function(session) {
         console.log('Requesting master timetable for ' + session + '...');
-        var deferred = $.Deferred();
+        var deferred = jQuery.Deferred();
         var successCallback = function(response, reason, obj) {
             var numCourses = 0;
             for (var key in response) {
@@ -185,7 +184,7 @@
             console.log("Invalid session code thrown!");
             deferred.reject("Invalid session code!");
         }
-        $.ajax({
+        jQuery.ajax({
             dataType: "jsonp",
             url: url,
             jsonpCallback: 'c311745ae7ee4925b17eb440fd06a31d',
@@ -196,7 +195,7 @@
     }
 
     var decorateWithExtra = function(schedule, master) {
-        var deferred = $.Deferred();
+        var deferred = jQuery.Deferred();
         console.log("Starting decorations...");
         for (var i = 0; i < schedule.length; i++) {
             // Extract some information and format it the way it is done in the master timetable
@@ -319,9 +318,9 @@
             type: 'text/plain'
         });
         var fileNameToSaveAs = "scheduleScraper_export.ics";
-        var downloadLink = $('#download-link');
+        var downloadLink = jQuery('#download-link');
         if (downloadLink.length == 0) {
-            downloadLink = $(document.createElement('a'));
+            downloadLink = jQuery(document.createElement('a'));
         }
         downloadLink.html("Download as .ics")
             .attr('id', 'download-link')
@@ -339,10 +338,10 @@
             .css('font-size', '13px')
             .css('text-decoration', 'none')
             .hover(function() {
-                $(this).css('background-color', '#003E8D');
-                // $(this).css('text-decoration', 'none');
+                jQuery(this).css('background-color', '#003E8D');
+                // jQuery(this).css('text-decoration', 'none');
             }, function() {
-                $(this).css('background-color', '#002a5c');
+                jQuery(this).css('background-color', '#002a5c');
             })
             // Insert in proper location
             .insertBefore('table.timetableSchedule');
@@ -354,17 +353,18 @@
     console.log("Script started...");
     // Actual things
     var run = function() {
+        console.log('jQuery ' + jQuery.fn.jquery + ' loaded.');
         // Make a promise
-        $.when(
+        jQuery.when(
                 // Loading screen
                 getLoadingPage()
                 .then(function() {
                     console.log('Loading page complete!');
                 }),
                 // Other
-                $.when(getSession())
+                jQuery.when(getSession())
                 .then(function(session) {
-                    return $.when(parseTimetable(session), getMasterTimetable(session));
+                    return jQuery.when(parseTimetable(session), getMasterTimetable(session));
                 })
                 .then(decorateWithExtra)
                 // Generate the .ics
@@ -384,17 +384,24 @@
     // if (location.href.indexOf(acornURL) != -1) {
     console.log('ACORN detected');
     // Load jQuery
-    var uid = "__9384nalksdfalkj04320";
-    //create onload-callback function
-    window[uid] = function() {
-        console.log("jQuery-" + jQuery.fn.jquery + " loaded!");
-        run();
-    };
-    var script = document.createElement("script");
-    script.setAttribute("type", "text/javascript");
-    script.setAttribute("onload", uid + "();"); //register onload-callback listener function
-    script.setAttribute("src", "https://code.jquery.com/jquery-2.1.4.min.js");
-    document.head.appendChild(script);
+    var importScript = (function(oHead) {
+        function loadError(oError) {
+            throw new URIError("The script " + oError.target.src + " is not accessible.");
+        }
+        return function(sSrc, fOnload) {
+            var oScript = document.createElement("script");
+            oScript.type = "text\/javascript";
+            oScript.onerror = loadError;
+            if (fOnload) {
+                oScript.onload = fOnload;
+            }
+            oHead.appendChild(oScript);
+            oScript.src = sSrc;
+        }
+    })(document.head || document.getElementsByTagName("head")[0]);
+
+    importScript('https://code.jquery.com/jquery-2.1.4.min.js', run)
+
     // } 
     // else {
     //     if (window.confirm("Please run this script on the page where you can see your timetable!\n" +
