@@ -17,9 +17,7 @@
     // Retrieves the session information from the current page
     var getSession = function() {
         console.log('Getting session...');
-        var session = (ROSI ?
-                $('td.section>table>tbody>tr:contains("Session")>td') :
-                $('div.session-info>span:contains("Session")'))
+        var session = $('div.session-info>span:contains("Session")')
             .next()
             .contents()
             .filter(function() {
@@ -90,24 +88,52 @@
 
         // A list of courses detected
         var schedule = [];
-        // Keeps track of how many multi-row courses are eating up columns invisibly
-        var dayOffsets = [0, 0, 0, 0, 0];
+        // Total number of columns in the table
+        var numColumns = 0;
+        // Keeps track of how many multi-column days are eating up columns invisibly
+        // Each element represents the column on which each day starts
+        var dayColumnStart = [0];
+        // Keeps track of how many multi-row courses are eating up rows invisibly
+        var colOffsets = [];
         var isPastNoon = false;
         $('table.timetableSchedule>tbody>tr').each(function(i, r) {
-            // Skip the first row (header row)
+            // The first row (header with day-of-week info)
             if (i == 0) {
-                return 0;
+                $(this).children('th').each(function(i, r) {
+                    var prevColumnStart = dayColumnStart[i];
+                    var thisColumnSpan = +($(this).attr('colspan') || 1);
+                    numColumns += thisColumnSpan;
+                    dayColumnStart.push(prevColumnStart + thisColumnSpan);
+                    colOffsets.push(0);
+                });
+                return true;
             }
-            var tdTags = $(this).children('td');
-            var tagNum = 0;
-            for (var dayNum = 0; dayNum <= 5; dayNum++) {
-                // Calculate day of the week
+            var tdTags = $(this).contents().filter(function() {
+                // http://stackoverflow.com/questions/1623734/selecting-html-comments-with-jquery
+                return this.nodeType == 1 || this.nodeType == 8;
+            });
+            var dayNum = -1;
+            for (var columnNum = 0;; columnNum++) {
+                console.log(colOffsets);
+                // If the column is a new day
+                if (dayColumnStart.indexOf(columnNum) != -1) {
+                    dayNum++;
+                    // End of a week
+                    if (dayNum > 5) {
+                        break;
+                    }
+                }
+                var slotTag = tdTags.eq(columnNum);
                 // If the slot is taken up by a multi-row course from before, skip it
-                if (dayOffsets[dayNum] > 0) {
-                    dayOffsets[dayNum]--;
+                if (colOffsets[columnNum] > 0) {
+                    colOffsets[columnNum]--;
+                    continue;
+                }else if (slotTag.is(function() {
+                        return this.nodeType == 8;
+                    })) {
+                    colOffsets[columnNum]--;
                     continue;
                 }
-                var slotTag = tdTags.eq(tagNum++);
                 // Skip empty classes
                 if (slotTag.hasClass("timeOfDay")) {
                     // Detect when we cross noon
@@ -117,13 +143,18 @@
                     continue;
                 } else if (slotTag.hasClass("emptySlot")) {
                     continue;
-                }
+                } 
                 // Parse valid course slots
                 var meetingInfo = slotTag.children('.meetingInfo');
                 schedule.push(parseCourse(meetingInfo, dayNum, isPastNoon));
                 // Multi-row courses
-                if (slotTag.attr('rowspan') != null) {
-                    dayOffsets[dayNum] = parseInt(slotTag.attr('rowspan')) - 1;
+                if (typeof(slotTag.attr('rowspan')) != undefined) {
+                    // Wide courses, fill up the rectangle
+                    var rowSpan = parseInt(slotTag.attr('rowspan'));
+                    for (var c = 0; c < +(slotTag.attr('colspan') || 1); c++) {
+                        colOffsets[columnNum + c] = rowSpan;
+                    }
+                    colOffsets[columnNum ] -= 1;
                 }
             }
         });
@@ -349,36 +380,29 @@
     };
 
     // Detect the page
-    var rosiURL = 'https://sws.rosi.utoronto.ca/sws/timetable/scheduleView.do';
     var acornURL = 'https://acorn.utoronto.ca/sws/timetable/main.do?main.dispatch#/calendar';
-    var ROSI = false;
-    // RoSI
-    if (location.href.indexOf(rosiURL) != -1) {
-        console.log('RoSI detected.');
-        ROSI = true;
-        // Load jQuery
-        var uid = "__9384nalksdfalkj04320";
-        //create onload-callback function
-        window[uid] = function() {
-            console.log("jQuery-" + jQuery.fn.jquery + " loaded!");
-            run();
-        };
-        var script = document.createElement("script");
-        script.setAttribute("type", "text/javascript");
-        script.setAttribute("onload", uid + "();"); //register onload-callback listener function
-        script.setAttribute("src", "//code.jquery.com/jquery-2.1.4.min.js");
-        document.head.appendChild(script);
-    } else if (location.href.indexOf(acornURL) != -1) {
-        console.log('ACORN detected');
-        // Run immediately if page is loaded, else wait for the page to load
-        document.readyState == 'complete' ? run() : window.onload = run;
-    } else {
-        if (window.confirm("Please run this script on the page where you can see your timetable!\n" +
-                "I can 't hack into your ACORN account to grab your schedule for you...\n" +
-                "Click OK to go there now.\n Click Cancel to stay here.")) {
-            window.location.href = acornURL;
-        } else {
-            console.log("Script not run.")
-        }
-    }
+    // if (location.href.indexOf(acornURL) != -1) {
+    console.log('ACORN detected');
+    // Load jQuery
+    var uid = "__9384nalksdfalkj04320";
+    //create onload-callback function
+    window[uid] = function() {
+        console.log("jQuery-" + jQuery.fn.jquery + " loaded!");
+        run();
+    };
+    var script = document.createElement("script");
+    script.setAttribute("type", "text/javascript");
+    script.setAttribute("onload", uid + "();"); //register onload-callback listener function
+    script.setAttribute("src", "https://code.jquery.com/jquery-2.1.4.min.js");
+    document.head.appendChild(script);
+    // } 
+    // else {
+    //     if (window.confirm("Please run this script on the page where you can see your timetable!\n" +
+    //             "I can 't hack into your ACORN account to grab your schedule for you...\n" +
+    //             "Click OK to go there now.\n Click Cancel to stay here.")) {
+    //         window.location.href = acornURL;
+    //     } else {
+    //         console.log("Script not run.")
+    //     }
+    // }
 })();
