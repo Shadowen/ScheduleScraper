@@ -150,7 +150,7 @@
                 // Multi-row courses
                 if (typeof(slotTag.attr('rowspan')) != undefined) {
                     // Wide courses, fill up the rectangle
-                    var rowSpan = parseInt(slotTag.attr('rowspan'));
+                    var rowSpan = +(parseInt(slotTag.attr('rowspan')) || 1);
                     for (var c = 0; c < +(slotTag.attr('colspan') || 1); c++) {
                         colOffsets[columnNum + c] = rowSpan;
                     }
