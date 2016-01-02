@@ -25,7 +25,7 @@
             })
             .text()
             // A very aggressive .trim() function
-            .replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+jQuery/g, '')
+            .replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
         console.log('Detected session "' + session + '"');
         return session;
     }
